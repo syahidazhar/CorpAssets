@@ -1,7 +1,7 @@
 ﻿Imports System.Data.SQLite
 Imports System.IO
 
-Public Class Form1
+Public Class FullTemplate
     ' --- KONFIGURASI DATABASE ---
     Private dbName As String = "CorpAssets.db"
     Private connStr As String = "Data Source=" & dbName & "; Version=3; Pooling=False;"
