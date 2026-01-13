@@ -12,6 +12,9 @@ Public Class FullTemplate
         ' Ini untuk memperbaiki error "Table Not Found" karena database lama masih nyangkut
         InisialisasiDatabase()
 
+        ' Tambahkan efek hover pada button (akan dipanggil setelah InitializeComponent)
+        AddButtonHoverEffects()
+
         TampilPanel("Login")
     End Sub
 
@@ -271,5 +274,31 @@ Public Class FullTemplate
     End Sub
     Private Sub btnClear_Click(sender As Object, e As EventArgs) Handles btnClear.Click
         BersihkanInput()
+    End Sub
+
+    ' ==========================================
+    ' BAGIAN 5: UI ENHANCEMENT HELPERS
+    ' ==========================================
+    ' Helper untuk efek hover pada button
+    Private Sub AddButtonHoverEffects()
+        ' Login button
+        Dim loginNormal = Color.FromArgb(41, 98, 255)
+        Dim loginHover = Color.FromArgb(30, 80, 220)
+        AddHandler btnLoginAction.MouseEnter, Sub(s, e)
+            btnLoginAction.BackColor = loginHover
+        End Sub
+        AddHandler btnLoginAction.MouseLeave, Sub(s, e)
+            btnLoginAction.BackColor = loginNormal
+        End Sub
+
+        ' Register button
+        Dim regNormal = Color.FromArgb(16, 185, 129)
+        Dim regHover = Color.FromArgb(10, 160, 110)
+        AddHandler btnRegisterAction.MouseEnter, Sub(s, e)
+            btnRegisterAction.BackColor = regHover
+        End Sub
+        AddHandler btnRegisterAction.MouseLeave, Sub(s, e)
+            btnRegisterAction.BackColor = regNormal
+        End Sub
     End Sub
 End Class

@@ -26,17 +26,23 @@ Partial Class FullTemplate
 
     '--- PANEL LOGIN ---
     Friend WithEvents pnlLogin As Panel
+    Friend WithEvents pnlLoginBackground As Panel ' Background dengan gradient
+    Friend WithEvents pnlLoginLogo As Panel ' Panel untuk logo/icon
     Friend WithEvents GroupBoxLogin As GroupBox
     Friend WithEvents txtLoginPass As TextBox
     Friend WithEvents txtLoginUser As TextBox
     Friend WithEvents btnLoginAction As Button
     Friend WithEvents LabelLoginTitle As Label
+    Friend WithEvents LabelLoginSubtitle As Label
     Friend WithEvents LabelUser As Label
     Friend WithEvents LabelPass As Label
-    Friend WithEvents LinkKeRegister As LinkLabel ' <--- LINK KE REGISTER
+    Friend WithEvents LinkKeRegister As LinkLabel
+    Friend WithEvents lblLogoText As Label ' Text logo
 
     '--- PANEL REGISTER (BARU) ---
     Friend WithEvents pnlRegister As Panel
+    Friend WithEvents pnlRegisterBackground As Panel ' Background dengan gradient
+    Friend WithEvents pnlRegisterLogo As Panel ' Panel untuk logo/icon
     Friend WithEvents GroupBoxRegister As GroupBox
     Friend WithEvents txtRegUser As TextBox
     Friend WithEvents txtRegPass As TextBox
@@ -44,6 +50,9 @@ Partial Class FullTemplate
     Friend WithEvents LinkKeLogin As LinkLabel
     Friend WithEvents LabelRegUser As Label
     Friend WithEvents LabelRegPass As Label
+    Friend WithEvents LabelRegTitle As Label
+    Friend WithEvents LabelRegSubtitle As Label
+    Friend WithEvents lblRegLogoText As Label ' Text logo
 
     '--- PANEL DASHBOARD ---
     Friend WithEvents pnlDashboard As Panel
@@ -110,30 +119,210 @@ Partial Class FullTemplate
         Me.PanelMain = New Panel() With {.Dock = DockStyle.Fill, .BackColor = System.Drawing.Color.WhiteSmoke}
 
         ' === A. PANEL LOGIN ===
-        Me.pnlLogin = New Panel() With {.Dock = DockStyle.Fill, .BackColor = System.Drawing.Color.WhiteSmoke}
-        Me.GroupBoxLogin = New GroupBox() With {.Text = "Administrator Login", .Size = New System.Drawing.Size(350, 280), .Location = New Point(325, 180)}
-        Me.LabelUser = New Label() With {.Text = "Username", .Location = New Point(30, 40)}
-        Me.txtLoginUser = New TextBox() With {.Location = New Point(30, 65), .Width = 280}
-        Me.LabelPass = New Label() With {.Text = "Password", .Location = New Point(30, 110)}
-        Me.txtLoginPass = New TextBox() With {.Location = New Point(30, 135), .Width = 280, .PasswordChar = "*"}
-        Me.btnLoginAction = New Button() With {.Text = "LOGIN", .Location = New Point(30, 180), .Width = 280, .Height = 40, .BackColor = System.Drawing.Color.Teal, .ForeColor = System.Drawing.Color.White}
-        Me.LinkKeRegister = New LinkLabel() With {.Text = "Belum punya akun? Daftar disini", .Location = New Point(80, 240), .AutoSize = True}
+        Me.pnlLogin = New Panel() With {.Dock = DockStyle.Fill, .BackColor = System.Drawing.Color.White}
 
-        Me.GroupBoxLogin.Controls.AddRange({LabelUser, txtLoginUser, LabelPass, txtLoginPass, btnLoginAction, LinkKeRegister})
-        Me.pnlLogin.Controls.Add(Me.GroupBoxLogin)
+        ' Background dengan efek modern (tanpa shadow)
+        Me.pnlLoginBackground = New Panel() With {
+         .Size = New Size(450, 470),
+            .BackColor = System.Drawing.Color.White,
+            .Location = New Point(315, 90)
+        }
+        ' Tambahkan border tipis untuk definisi
+        Me.pnlLoginBackground.BorderStyle = BorderStyle.FixedSingle
+
+        ' Logo Panel (Icon Aplikasi)
+        Me.pnlLoginLogo = New Panel() With {
+ .Size = New Size(100, 100),
+  .BackColor = System.Drawing.Color.FromArgb(41, 98, 255),
+        .Location = New Point(175, 30)
+ }
+        MakePanelRounded(Me.pnlLoginLogo, 50)
+
+        ' Logo Text di dalam panel logo
+        Me.lblLogoText = New Label() With {
+.Text = "CA",
+   .Font = New Font("Segoe UI", 36, FontStyle.Bold),
+       .ForeColor = System.Drawing.Color.White,
+    .Size = New Size(100, 100),
+  .TextAlign = ContentAlignment.MiddleCenter,
+      .Location = New Point(0, 0)
+        }
+        Me.pnlLoginLogo.Controls.Add(Me.lblLogoText)
+
+        ' Form Fields - dipindahkan ke atas
+        Me.LabelUser = New Label() With {
+.Text = "Username",
+      .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+  .ForeColor = System.Drawing.Color.FromArgb(60, 60, 60),
+       .Location = New Point(50, 160),
+      .AutoSize = True
+        }
+
+        Me.txtLoginUser = New TextBox() With {
+    .Location = New Point(50, 185),
+ .Width = 350,
+       .Height = 35,
+            .Font = New Font("Segoe UI", 11),
+    .BorderStyle = BorderStyle.FixedSingle
+      }
+        Me.txtLoginUser.Padding = New Padding(10)
+
+        Me.LabelPass = New Label() With {
+.Text = "Password",
+.Font = New Font("Segoe UI", 10, FontStyle.Bold),
+   .ForeColor = System.Drawing.Color.FromArgb(60, 60, 60),
+    .Location = New Point(50, 240),
+       .AutoSize = True
+  }
+
+        Me.txtLoginPass = New TextBox() With {
+       .Location = New Point(50, 265),
+            .Width = 350,
+          .Height = 35,
+   .Font = New Font("Segoe UI", 11),
+  .PasswordChar = "●"c,
+      .BorderStyle = BorderStyle.FixedSingle
+  }
+        Me.txtLoginPass.Padding = New Padding(10)
+
+        ' Login Button
+        Me.btnLoginAction = New Button() With {
+       .Text = "LOGIN",
+  .Location = New Point(50, 330),
+ .Width = 350,
+      .Height = 45,
+ .BackColor = System.Drawing.Color.FromArgb(41, 98, 255),
+  .ForeColor = System.Drawing.Color.White,
+  .Font = New Font("Segoe UI", 12, FontStyle.Bold),
+     .FlatStyle = FlatStyle.Flat,
+      .Cursor = Cursors.Hand
+        }
+        Me.btnLoginAction.FlatAppearance.BorderSize = 0
+
+        ' Link Register
+        Me.LinkKeRegister = New LinkLabel() With {
+     .Text = "Don't have an account? Sign Up",
+  .Font = New Font("Segoe UI", 9),
+       .Location = New Point(125, 395),
+            .AutoSize = True,
+            .LinkColor = System.Drawing.Color.FromArgb(41, 98, 255)
+   }
+
+        ' Add all to background panel (tanpa Welcome Back dan subtitle)
+        Me.pnlLoginBackground.Controls.AddRange({
+  Me.pnlLoginLogo,
+   Me.LabelUser,
+        Me.txtLoginUser,
+ Me.LabelPass,
+     Me.txtLoginPass,
+   Me.btnLoginAction,
+Me.LinkKeRegister
+   })
+
+        Me.pnlLogin.Controls.Add(Me.pnlLoginBackground)
 
         ' === A.2 PANEL REGISTER (BARU DITAMBAHKAN) ===
-        Me.pnlRegister = New Panel() With {.Dock = DockStyle.Fill, .BackColor = System.Drawing.Color.WhiteSmoke, .Visible = False}
-        Me.GroupBoxRegister = New GroupBox() With {.Text = "Registrasi Akun Baru", .Size = New System.Drawing.Size(350, 280), .Location = New Point(325, 180)}
-        Me.LabelRegUser = New Label() With {.Text = "Username Baru", .Location = New Point(30, 40)}
-        Me.txtRegUser = New TextBox() With {.Location = New Point(30, 65), .Width = 280}
-        Me.LabelRegPass = New Label() With {.Text = "Password Baru", .Location = New Point(30, 110)}
-        Me.txtRegPass = New TextBox() With {.Location = New Point(30, 135), .Width = 280, .PasswordChar = "*"}
-        Me.btnRegisterAction = New Button() With {.Text = "DAFTAR SEKARANG", .Location = New Point(30, 180), .Width = 280, .Height = 40, .BackColor = System.Drawing.Color.CornflowerBlue, .ForeColor = System.Drawing.Color.White}
-        Me.LinkKeLogin = New LinkLabel() With {.Text = "Sudah punya akun? Login", .Location = New Point(100, 240), .AutoSize = True}
+        Me.pnlRegister = New Panel() With {.Dock = DockStyle.Fill, .BackColor = System.Drawing.Color.White, .Visible = False}
 
-        Me.GroupBoxRegister.Controls.AddRange({LabelRegUser, txtRegUser, LabelRegPass, txtRegPass, btnRegisterAction, LinkKeLogin})
-        Me.pnlRegister.Controls.Add(Me.GroupBoxRegister)
+        ' Background dengan efek modern (tanpa shadow)
+        Me.pnlRegisterBackground = New Panel() With {
+          .Size = New Size(450, 470),
+    .BackColor = System.Drawing.Color.White,
+   .Location = New Point(315, 90)
+ }
+        ' Tambahkan border tipis untuk definisi
+        Me.pnlRegisterBackground.BorderStyle = BorderStyle.FixedSingle
+
+        ' Logo Panel
+        Me.pnlRegisterLogo = New Panel() With {
+     .Size = New Size(100, 100),
+        .BackColor = System.Drawing.Color.FromArgb(16, 185, 129),
+            .Location = New Point(175, 30)
+        }
+        MakePanelRounded(Me.pnlRegisterLogo, 50)
+
+        ' Logo Text
+        Me.lblRegLogoText = New Label() With {
+        .Text = "CA",
+            .Font = New Font("Segoe UI", 36, FontStyle.Bold),
+ .ForeColor = System.Drawing.Color.White,
+     .Size = New Size(100, 100),
+.TextAlign = ContentAlignment.MiddleCenter,
+      .Location = New Point(0, 0)
+    }
+        Me.pnlRegisterLogo.Controls.Add(Me.lblRegLogoText)
+
+        ' Form Fields - dipindahkan ke atas
+        Me.LabelRegUser = New Label() With {
+        .Text = "Username",
+     .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+.ForeColor = System.Drawing.Color.FromArgb(60, 60, 60),
+       .Location = New Point(50, 160),
+    .AutoSize = True
+ }
+
+        Me.txtRegUser = New TextBox() With {
+      .Location = New Point(50, 185),
+   .Width = 350,
+     .Height = 35,
+  .Font = New Font("Segoe UI", 11),
+    .BorderStyle = BorderStyle.FixedSingle
+        }
+        Me.txtRegUser.Padding = New Padding(10)
+
+        Me.LabelRegPass = New Label() With {
+    .Text = "Password",
+   .Font = New Font("Segoe UI", 10, FontStyle.Bold),
+  .ForeColor = System.Drawing.Color.FromArgb(60, 60, 60),
+    .Location = New Point(50, 240),
+      .AutoSize = True
+      }
+
+        Me.txtRegPass = New TextBox() With {
+ .Location = New Point(50, 265),
+ .Width = 350,
+      .Height = 35,
+     .Font = New Font("Segoe UI", 11),
+ .PasswordChar = "●"c,
+.BorderStyle = BorderStyle.FixedSingle
+  }
+        Me.txtRegPass.Padding = New Padding(10)
+
+        ' Register Button
+        Me.btnRegisterAction = New Button() With {
+   .Text = "SIGN UP",
+    .Location = New Point(50, 330),
+     .Width = 350,
+     .Height = 45,
+      .BackColor = System.Drawing.Color.FromArgb(16, 185, 129),
+         .ForeColor = System.Drawing.Color.White,
+ .Font = New Font("Segoe UI", 12, FontStyle.Bold),
+      .FlatStyle = FlatStyle.Flat,
+  .Cursor = Cursors.Hand
+        }
+        Me.btnRegisterAction.FlatAppearance.BorderSize = 0
+
+        ' Link Login
+        Me.LinkKeLogin = New LinkLabel() With {
+            .Text = "Already have an account? Sign In",
+   .Font = New Font("Segoe UI", 9),
+      .Location = New Point(120, 395),
+       .AutoSize = True,
+            .LinkColor = System.Drawing.Color.FromArgb(16, 185, 129)
+        }
+
+        ' Add all to background panel (tanpa Create Account dan subtitle)
+        Me.pnlRegisterBackground.Controls.AddRange({
+  Me.pnlRegisterLogo,
+     Me.LabelRegUser,
+    Me.txtRegUser,
+        Me.LabelRegPass,
+         Me.txtRegPass,
+  Me.btnRegisterAction,
+    Me.LinkKeLogin
+        })
+
+        Me.pnlRegister.Controls.Add(Me.pnlRegisterBackground)
 
         ' === B. PANEL DASHBOARD ===
         Me.pnlDashboard = New Panel() With {.Dock = DockStyle.Fill, .Visible = False}
@@ -203,4 +392,37 @@ Partial Class FullTemplate
         pnl.Controls.AddRange({lblT, lblOutput})
         Return pnl
     End Function
+
+    ' Helper untuk menambahkan efek shadow pada panel
+    Private Sub AddDropShadow(panel As Panel)
+        ' Membuat efek shadow sederhana dengan border
+        AddHandler panel.Paint, Sub(sender As Object, e As PaintEventArgs)
+                                    Dim g As Graphics = e.Graphics
+                                    g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+
+                                    ' Shadow effect
+                                    Dim shadowRect As New Rectangle(5, 5, panel.Width - 5, panel.Height - 5)
+                                    Using shadowBrush As New SolidBrush(Color.FromArgb(20, 0, 0, 0))
+                                        g.FillRectangle(shadowBrush, shadowRect)
+                                    End Using
+                                End Sub
+    End Sub
+
+    ' Helper untuk membuat panel rounded
+    Private Sub MakePanelRounded(panel As Panel, radius As Integer)
+        AddHandler panel.Paint, Sub(sender As Object, e As PaintEventArgs)
+                                    Dim g As Graphics = e.Graphics
+                                    g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+
+                                    ' Create rounded rectangle path
+                                    Dim path As New Drawing2D.GraphicsPath()
+                                    path.AddArc(0, 0, radius, radius, 180, 90)
+                                    path.AddArc(panel.Width - radius, 0, radius, radius, 270, 90)
+                                    path.AddArc(panel.Width - radius, panel.Height - radius, radius, radius, 0, 90)
+                                    path.AddArc(0, panel.Height - radius, radius, radius, 90, 90)
+                                    path.CloseFigure()
+
+                                    panel.Region = New Region(path)
+                                End Sub
+    End Sub
 End Class
