@@ -50,10 +50,6 @@ Public Class MainForm
         ' 2. Highlight tombol yang diklik
         btnAktif.BackColor = Color.FromArgb(45, 45, 60) ' Sedikit lebih terang
         btnAktif.ForeColor = Color.White
-
-        ' Tambahkan border warna di kiri (Aksen visual)
-        ' (Opsional, kalau mau lebih simple hapus bagian ini)
-        ' Di WinForms murni agak tricky bikin border kiri doang, jadi kita main warna aja cukup.
     End Sub
 
     ' --- EVENT HANDLERS MENU ---

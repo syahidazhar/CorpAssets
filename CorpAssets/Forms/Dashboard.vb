@@ -36,9 +36,7 @@ Public Class DashboardForm
 
     Private Sub SetupCustomUI()
         ' Setup Custom Painting untuk Cards
-        pnlStat1.BackColor = Color.White
-        pnlStat2.BackColor = Color.White
-        pnlStat3.BackColor = Color.White
+        ' Note: BackColor diset dinamis di ApplyTheme, jadi disini gak perlu diset lagi.
 
         AddHandler pnlStat1.Paint, AddressOf DrawStatCard_Total
         AddHandler pnlStat2.Paint, AddressOf DrawStatCard_Value
@@ -55,6 +53,12 @@ Public Class DashboardForm
 
         ' Setup Tabel Badge
         AddHandler dgvRecent.CellPainting, AddressOf dgvRecent_CellPainting
+
+        ' --- TAMBAHAN FIX 1: KLIK BLANK SPOT ---
+        ' Kalau user klik area kosong di PnlBody, seleksi tabel hilang
+        AddHandler PnlBody.Click, Sub(s, e) dgvRecent.ClearSelection()
+        AddHandler TableLayoutMain.Click, Sub(s, e) dgvRecent.ClearSelection()
+        AddHandler pnlRecentContainer.Click, Sub(s, e) dgvRecent.ClearSelection()
     End Sub
 
     Private Sub DashboardForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -122,15 +126,29 @@ Public Class DashboardForm
                 ' Masukkan Data
                 dgvRecent.DataSource = dt
                 dgvRecent.ClearSelection()
+                dgvRecent.CurrentCell = Nothing ' <--- Tambahan biar sel aktif hilang
 
                 ' 3. Load Chart Data
                 ListKategori.Clear()
-                Dim cmd As New SQLiteCommand("SELECT c.nama_kategori, COUNT(a.id) as jum FROM categories c LEFT JOIN assets a ON a.category_id = c.id GROUP BY c.nama_kategori", con)
+
+                ' --- FIX 3: QUERY CHART DIPERBAIKI ---
+                ' Mommy ganti querynya. Sekarang kita ambil dari ASSETS.
+                ' Kalau kategori_id nya gak ketemu atau null, kita kasih nama 'Uncategorized'
+                Dim sqlChart As String = "SELECT IFNULL(c.nama_kategori, 'Uncategorized') as cat_name, COUNT(a.id) as jum " &
+                                         "FROM assets a " &
+                                         "LEFT JOIN categories c ON a.category_id = c.id " &
+                                         "GROUP BY cat_name"
+
+                Dim cmd As New SQLiteCommand(sqlChart, con)
                 Using rdr = cmd.ExecuteReader()
-                    Dim pal() As Color = {Color.FromArgb(99, 102, 241), Color.FromArgb(16, 185, 129), Color.FromArgb(245, 158, 11), Color.FromArgb(236, 72, 153)}
+                    Dim pal() As Color = {Color.FromArgb(99, 102, 241), Color.FromArgb(16, 185, 129), Color.FromArgb(245, 158, 11), Color.FromArgb(236, 72, 153), Color.CornflowerBlue}
                     Dim i As Integer = 0
                     While rdr.Read()
-                        ListKategori.Add(New KategoriStat With {.Nama = rdr("nama_kategori").ToString(), .Jumlah = Convert.ToInt32(rdr("jum")), .Warna = pal(i Mod pal.Length)})
+                        ListKategori.Add(New KategoriStat With {
+                            .Nama = rdr("cat_name").ToString(),
+                            .Jumlah = Convert.ToInt32(rdr("jum")),
+                            .Warna = pal(i Mod pal.Length)
+                        })
                         i += 1
                     End While
                 End Using
@@ -286,26 +304,64 @@ Public Class DashboardForm
 
     Private Sub ApplyTheme(dark As Boolean)
         If dark Then
-            Theme.Bg = Color.FromArgb(15, 23, 42) : Theme.PanelBg = Color.FromArgb(30, 41, 59)
-            Theme.TextMain = Color.White : Theme.TextSub = Color.FromArgb(148, 163, 184)
-            Theme.Accent1 = Color.FromArgb(129, 140, 248) : Theme.Accent2 = Color.FromArgb(52, 211, 153) : Theme.Accent3 = Color.FromArgb(251, 113, 133)
+            Theme.Bg = Color.FromArgb(15, 23, 42)
+            Theme.PanelBg = Color.FromArgb(30, 41, 59)
+            Theme.TextMain = Color.White
+            Theme.TextSub = Color.FromArgb(148, 163, 184)
+            Theme.Accent1 = Color.FromArgb(129, 140, 248)
+            Theme.Accent2 = Color.FromArgb(52, 211, 153)
+            Theme.Accent3 = Color.FromArgb(251, 113, 133)
             Theme.GridLine = Color.FromArgb(71, 85, 105)
             btnMode.Text = "☀" : btnMode.ForeColor = Color.Gold
         Else
-            Theme.Bg = Color.FromArgb(248, 250, 252) : Theme.PanelBg = Color.White
-            Theme.TextMain = Color.FromArgb(15, 23, 42) : Theme.TextSub = Color.FromArgb(100, 116, 139)
-            Theme.Accent1 = Color.FromArgb(79, 70, 229) : Theme.Accent2 = Color.FromArgb(16, 185, 129) : Theme.Accent3 = Color.FromArgb(244, 63, 94)
+            Theme.Bg = Color.FromArgb(248, 250, 252)
+            Theme.PanelBg = Color.White
+            Theme.TextMain = Color.FromArgb(15, 23, 42)
+            Theme.TextSub = Color.FromArgb(100, 116, 139)
+            Theme.Accent1 = Color.FromArgb(79, 70, 229)
+            Theme.Accent2 = Color.FromArgb(16, 185, 129)
+            Theme.Accent3 = Color.FromArgb(244, 63, 94)
             Theme.GridLine = Color.FromArgb(226, 232, 240)
             btnMode.Text = "☾" : btnMode.ForeColor = Color.Gray
         End If
-        Me.BackColor = Theme.Bg : PnlHeader.BackColor = Theme.PanelBg : Separator.BackColor = Theme.GridLine
-        lblBrand.ForeColor = Theme.TextMain : lblSubHeader.ForeColor = Theme.TextSub
-        lblChartTitle.ForeColor = Theme.TextMain : lblRecentTitle.ForeColor = Theme.TextMain
-        pnlChartContainer.BackColor = Theme.PanelBg : pnlRecentContainer.BackColor = Theme.PanelBg : pnlChart.BackColor = Theme.PanelBg
 
-        dgvRecent.BackgroundColor = Theme.PanelBg : dgvRecent.GridColor = Theme.GridLine
-        dgvRecent.DefaultCellStyle.BackColor = Theme.PanelBg : dgvRecent.DefaultCellStyle.ForeColor = Theme.TextMain
-        dgvRecent.ColumnHeadersDefaultCellStyle.BackColor = Theme.Bg : dgvRecent.ColumnHeadersDefaultCellStyle.ForeColor = Theme.TextSub
+        Me.BackColor = Theme.Bg
+        PnlHeader.BackColor = Theme.PanelBg
+        Separator.BackColor = Theme.GridLine
+
+        lblBrand.ForeColor = Theme.TextMain
+        lblSubHeader.ForeColor = Theme.TextSub
+        lblChartTitle.ForeColor = Theme.TextMain
+        lblRecentTitle.ForeColor = Theme.TextMain
+
+        pnlChartContainer.BackColor = Theme.PanelBg
+        pnlRecentContainer.BackColor = Theme.PanelBg
+        pnlChart.BackColor = Theme.PanelBg
+
+        ' --- FIX 2: SUDUT PUTIH ---
+        ' Background panel statistik diset ke Theme.Bg (Warna Latar Belakang Aplikasi)
+        ' Jadi sudut luarnya akan nyaru dengan background, sedangkan lingkaran dalamnya digambar pakai Theme.PanelBg
+        pnlStat1.BackColor = Theme.Bg
+        pnlStat2.BackColor = Theme.Bg
+        pnlStat3.BackColor = Theme.Bg
+
+        ' --- FIX 1: EFEK SELECT BIRU ---
+        dgvRecent.BackgroundColor = Theme.PanelBg
+        dgvRecent.GridColor = Theme.GridLine
+        dgvRecent.DefaultCellStyle.BackColor = Theme.PanelBg
+        dgvRecent.DefaultCellStyle.ForeColor = Theme.TextMain
+        dgvRecent.DefaultCellStyle.SelectionBackColor = Theme.PanelBg
+        dgvRecent.DefaultCellStyle.SelectionForeColor = Theme.TextMain
+
+        ' --- TAMBAHAN: HILANGKAN FOKUS (SUPAYA GAK ADA GARIS BIRU) ---
+        dgvRecent.EnableHeadersVisualStyles = False ' <--- Supaya header gak ikut gaya Windows
+        dgvRecent.BorderStyle = BorderStyle.None  ' <--- Hilangkan garis luar tabel
+
+        ' Loop semua kolom
+        For Each col As DataGridViewColumn In dgvRecent.Columns
+            col.DefaultCellStyle.SelectionBackColor = Color.Transparent  ' <-- Hilangkan seleksi biru
+            col.DefaultCellStyle.SelectionForeColor = Theme.TextMain
+        Next
     End Sub
 
     Private Sub btnMode_Click(sender As Object, e As EventArgs) Handles btnMode.Click
@@ -315,32 +371,124 @@ Public Class DashboardForm
         LoadData()
     End Sub
     Private Sub btnImport_Click(sender As Object, e As EventArgs) Handles btnImport.Click
-        Dim opf As New OpenFileDialog() With {.Filter = "CSV Files (*.csv)|*.csv"}
-        If opf.ShowDialog() = DialogResult.OK Then
-            Dim lines = File.ReadAllLines(opf.FileName)
-            Using con As New SQLiteConnection(connStr)
-                con.Open()
-                Using trans = con.BeginTransaction()
-                    Try
-                        For i As Integer = 1 To lines.Length - 1
-                            Dim p = lines(i).Split(","c)
-                            If p.Length < 8 Then Continue For
-                            Dim cid = GetId(con, "categories", "nama_kategori", p(3).Trim())
-                            Dim lid = GetId(con, "locations", "nama_lokasi", p(4).Trim())
-                            Dim sql = "INSERT INTO assets (nama, merk, serial, category_id, location_id, kondisi, harga, tgl_beli) VALUES (@n, @m, @s, @c, @l, @k, @h, @t)"
-                            Using cmd As New SQLiteCommand(sql, con)
-                                cmd.Parameters.AddWithValue("@n", p(0)) : cmd.Parameters.AddWithValue("@m", p(1)) : cmd.Parameters.AddWithValue("@s", p(2))
-                                cmd.Parameters.AddWithValue("@c", cid) : cmd.Parameters.AddWithValue("@l", lid) : cmd.Parameters.AddWithValue("@k", p(5))
-                                cmd.Parameters.AddWithValue("@h", Val(p(6))) : cmd.Parameters.AddWithValue("@t", p(7))
-                                cmd.ExecuteNonQuery()
-                            End Using
-                        Next
-                        trans.Commit() : LoadData()
-                    Catch ex As Exception
-                        trans.Rollback()
-                    End Try
-                End Using
+        Dim opf As New OpenFileDialog()
+        opf.Filter = "CSV Files (*.csv)|*.csv"
+        opf.Title = "Import Data Aset"
+
+        If opf.ShowDialog() <> DialogResult.OK Then Exit Sub
+
+        ' --- SAFETY LAYER 1: VALIDASI FILE ---
+        Dim lines As String()
+        Try
+            lines = File.ReadAllLines(opf.FileName)
+        Catch ex As Exception
+            MessageBox.Show("Gagal membaca file. Pastikan file tidak sedang dibuka di Excel.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End Try
+
+        If lines.Length <= 1 Then
+            MessageBox.Show("File CSV kosong atau hanya berisi header.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Exit Sub
+        End If
+
+        Dim successCount As Integer = 0
+        Dim failCount As Integer = 0
+        Dim errorLog As String = ""
+
+        Using con As New SQLiteConnection(AppConfig.CONN_STR)
+            con.Open()
+
+            ' --- SAFETY LAYER 2: TRANSACTION (ALL OR NOTHING) ---
+            Using trans = con.BeginTransaction()
+                Try
+                    ' Mulai dari index 1 (melewati Header baris ke-0)
+                    For i As Integer = 1 To lines.Length - 1
+                        Dim line As String = lines(i).Trim()
+                        If String.IsNullOrWhiteSpace(line) Then Continue For
+
+                        ' Split CSV
+                        Dim p As String() = line.Split(","c)
+
+                        ' --- SAFETY LAYER 3: VALIDASI KOLOM ---
+                        If p.Length < 8 Then
+                            failCount += 1
+                            errorLog = errorLog & "Baris " & (i + 1) & ": Kolom kurang (Wajib 8 kolom)." & vbNewLine
+                            Continue For
+                        End If
+
+                        ' --- PARSING DATA ---
+                        Dim nama As String = p(0).Trim()
+                        Dim merk As String = p(1).Trim()
+                        Dim serial As String = p(2).Trim()
+                        Dim tgl As String = p(3).Trim()
+
+                        ' Bersihkan format harga
+                        Dim hargaStr As String = System.Text.RegularExpressions.Regex.Replace(p(4), "[^\d]", "")
+                        Dim harga As Long = 0
+                        Long.TryParse(hargaStr, harga)
+
+                        Dim kondisi As String = p(5).Trim()
+                        Dim lokasi As String = p(6).Trim()
+                        Dim kategori As String = p(7).Trim()
+
+                        ' --- SAFETY LAYER 4: DATA INTEGRITY ---
+                        EnsureReferenceExists(con, "locations", "nama_lokasi", lokasi)
+                        EnsureReferenceExists(con, "categories", "nama_kategori", kategori)
+
+                        ' --- INSERT KE ASSETS ---
+                        Dim sql As String = "INSERT INTO assets (nama, merk, serial, tgl_beli, harga, kondisi, lokasi, kategori) " &
+                                            "VALUES (@n, @m, @s, @t, @h, @k, @l, @c)"
+
+                        Using cmd As New SQLiteCommand(sql, con)
+                            cmd.Parameters.AddWithValue("@n", nama)
+                            cmd.Parameters.AddWithValue("@m", merk)
+                            cmd.Parameters.AddWithValue("@s", serial)
+                            cmd.Parameters.AddWithValue("@t", tgl)
+                            cmd.Parameters.AddWithValue("@h", harga)
+                            cmd.Parameters.AddWithValue("@k", kondisi)
+                            cmd.Parameters.AddWithValue("@l", lokasi)
+                            cmd.Parameters.AddWithValue("@c", kategori)
+                            cmd.ExecuteNonQuery()
+                        End Using
+
+                        successCount += 1
+                    Next
+
+                    trans.Commit()
+                    LoadData()
+
+                    ' --- BAGIAN YANG TADI ERROR SUDAH DIPERBAIKI (GANTI KE MANUAL &) ---
+                    Dim msg As String = "Import Selesai!" & vbNewLine & "Sukses: " & successCount & vbNewLine & "Gagal: " & failCount
+
+                    If failCount > 0 Then
+                        msg = msg & vbNewLine & vbNewLine & "Detail Error:" & vbNewLine & errorLog
+                    End If
+
+                    MessageBox.Show(msg, "Import Result", MessageBoxButtons.OK, If(failCount > 0, MessageBoxIcon.Warning, MessageBoxIcon.Information))
+
+                Catch ex As Exception
+                    trans.Rollback()
+                    MessageBox.Show("Terjadi kesalahan fatal: " & ex.Message, "Error Fatal", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                End Try
             End Using
+        End Using
+    End Sub
+
+    ' --- HELPER FUNCTION JUGA DIPERBAIKI ---
+    Private Sub EnsureReferenceExists(con As SQLiteConnection, tableName As String, colName As String, value As String)
+        If String.IsNullOrWhiteSpace(value) Then Exit Sub
+
+        ' Manual string concat biar aman
+        Dim sqlCheck As String = "SELECT COUNT(*) FROM " & tableName & " WHERE " & colName & " = @val"
+        Dim checkCmd As New SQLiteCommand(sqlCheck, con)
+        checkCmd.Parameters.AddWithValue("@val", value)
+        Dim count As Integer = Convert.ToInt32(checkCmd.ExecuteScalar())
+
+        If count = 0 Then
+            Dim sqlInsert As String = "INSERT INTO " & tableName & " (" & colName & ") VALUES (@val)"
+            Dim insertCmd As New SQLiteCommand(sqlInsert, con)
+            insertCmd.Parameters.AddWithValue("@val", value)
+            insertCmd.ExecuteNonQuery()
         End If
     End Sub
     Private Function GetId(con As SQLiteConnection, tbl As String, col As String, val As String) As Integer
