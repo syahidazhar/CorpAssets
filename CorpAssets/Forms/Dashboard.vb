@@ -36,8 +36,6 @@ Public Class DashboardForm
 
     Private Sub SetupCustomUI()
         ' Setup Custom Painting untuk Cards
-        ' Note: BackColor diset dinamis di ApplyTheme, jadi disini gak perlu diset lagi.
-
         AddHandler pnlStat1.Paint, AddressOf DrawStatCard_Total
         AddHandler pnlStat2.Paint, AddressOf DrawStatCard_Value
         AddHandler pnlStat3.Paint, AddressOf DrawStatCard_Alert
@@ -54,8 +52,7 @@ Public Class DashboardForm
         ' Setup Tabel Badge
         AddHandler dgvRecent.CellPainting, AddressOf dgvRecent_CellPainting
 
-        ' --- TAMBAHAN FIX 1: KLIK BLANK SPOT ---
-        ' Kalau user klik area kosong di PnlBody, seleksi tabel hilang
+        ' Klik area kosong untuk unselect
         AddHandler PnlBody.Click, Sub(s, e) dgvRecent.ClearSelection()
         AddHandler TableLayoutMain.Click, Sub(s, e) dgvRecent.ClearSelection()
         AddHandler pnlRecentContainer.Click, Sub(s, e) dgvRecent.ClearSelection()
@@ -67,7 +64,7 @@ Public Class DashboardForm
     End Sub
 
     ' ==========================================
-    ' BAGIAN UTAMA: PEMAKSAAN 4 KOLOM MUNCUL
+    ' BAGIAN UTAMA: LOAD DATA
     ' ==========================================
     Private Sub LoadData()
         If Not File.Exists(dbName) Then Exit Sub
@@ -89,8 +86,6 @@ Public Class DashboardForm
                 dgvRecent.AutoGenerateColumns = False
                 dgvRecent.DataSource = Nothing
                 dgvRecent.Columns.Clear()
-
-                ' KUNCI: Gunakan FillWeight untuk memaksa pembagian lebar (Total 100%)
                 dgvRecent.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill
 
                 ' KOLOM 1: NAMA (40%)
@@ -126,14 +121,10 @@ Public Class DashboardForm
                 ' Masukkan Data
                 dgvRecent.DataSource = dt
                 dgvRecent.ClearSelection()
-                dgvRecent.CurrentCell = Nothing ' <--- Tambahan biar sel aktif hilang
+                dgvRecent.CurrentCell = Nothing
 
                 ' 3. Load Chart Data
                 ListKategori.Clear()
-
-                ' --- FIX 3: QUERY CHART DIPERBAIKI ---
-                ' Mommy ganti querynya. Sekarang kita ambil dari ASSETS.
-                ' Kalau kategori_id nya gak ketemu atau null, kita kasih nama 'Uncategorized'
                 Dim sqlChart As String = "SELECT IFNULL(c.nama_kategori, 'Uncategorized') as cat_name, COUNT(a.id) as jum " &
                                          "FROM assets a " &
                                          "LEFT JOIN categories c ON a.category_id = c.id " &
@@ -174,7 +165,6 @@ Public Class DashboardForm
     Private Sub DrawCard(g As Graphics, w As Integer, h As Integer, title As String, value As String, icon As String, accent As Color)
         g.SmoothingMode = SmoothingMode.AntiAlias
 
-        ' Background Rounded
         Dim path As New GraphicsPath()
         Dim r As Integer = 15
         path.AddArc(0, 0, r, r, 180, 90)
@@ -233,7 +223,6 @@ Public Class DashboardForm
                 g.DrawString(item.Nama, New Font("Segoe UI", 9, FontStyle.Bold), bTxt, 10, yPos + 5)
             End Using
 
-            ' Function Rounded
             Dim GetRoundedRect As Func(Of Rectangle, Integer, GraphicsPath) = Function(rect, radius)
                                                                                   Dim p As New GraphicsPath()
                                                                                   p.AddArc(rect.X, rect.Y, radius, radius, 180, 90)
@@ -282,7 +271,6 @@ Public Class DashboardForm
             Dim y As Integer = e.CellBounds.Y + (e.CellBounds.Height - h) \ 2
             If x < e.CellBounds.X Then x = e.CellBounds.X
 
-            ' Function Rounded Local
             Dim GetRoundedRect As Func(Of Rectangle, Integer, GraphicsPath) = Function(rect, radius)
                                                                                   Dim p As New GraphicsPath()
                                                                                   p.AddArc(rect.X, rect.Y, radius, radius, 180, 90)
@@ -338,14 +326,10 @@ Public Class DashboardForm
         pnlRecentContainer.BackColor = Theme.PanelBg
         pnlChart.BackColor = Theme.PanelBg
 
-        ' --- FIX 2: SUDUT PUTIH ---
-        ' Background panel statistik diset ke Theme.Bg (Warna Latar Belakang Aplikasi)
-        ' Jadi sudut luarnya akan nyaru dengan background, sedangkan lingkaran dalamnya digambar pakai Theme.PanelBg
         pnlStat1.BackColor = Theme.Bg
         pnlStat2.BackColor = Theme.Bg
         pnlStat3.BackColor = Theme.Bg
 
-        ' --- FIX 1: EFEK SELECT BIRU ---
         dgvRecent.BackgroundColor = Theme.PanelBg
         dgvRecent.GridColor = Theme.GridLine
         dgvRecent.DefaultCellStyle.BackColor = Theme.PanelBg
@@ -353,13 +337,11 @@ Public Class DashboardForm
         dgvRecent.DefaultCellStyle.SelectionBackColor = Theme.PanelBg
         dgvRecent.DefaultCellStyle.SelectionForeColor = Theme.TextMain
 
-        ' --- TAMBAHAN: HILANGKAN FOKUS (SUPAYA GAK ADA GARIS BIRU) ---
-        dgvRecent.EnableHeadersVisualStyles = False ' <--- Supaya header gak ikut gaya Windows
-        dgvRecent.BorderStyle = BorderStyle.None  ' <--- Hilangkan garis luar tabel
+        dgvRecent.EnableHeadersVisualStyles = False
+        dgvRecent.BorderStyle = BorderStyle.None
 
-        ' Loop semua kolom
         For Each col As DataGridViewColumn In dgvRecent.Columns
-            col.DefaultCellStyle.SelectionBackColor = Color.Transparent  ' <-- Hilangkan seleksi biru
+            col.DefaultCellStyle.SelectionBackColor = Color.Transparent
             col.DefaultCellStyle.SelectionForeColor = Theme.TextMain
         Next
     End Sub
@@ -370,6 +352,10 @@ Public Class DashboardForm
     Private Sub btnRefresh_Click(sender As Object, e As EventArgs) Handles btnRefresh.Click
         LoadData()
     End Sub
+
+    ' ==========================================
+    ' BAGIAN IMPORT CSV (FIXED)
+    ' ==========================================
     Private Sub btnImport_Click(sender As Object, e As EventArgs) Handles btnImport.Click
         Dim opf As New OpenFileDialog()
         opf.Filter = "CSV Files (*.csv)|*.csv"
@@ -377,7 +363,6 @@ Public Class DashboardForm
 
         If opf.ShowDialog() <> DialogResult.OK Then Exit Sub
 
-        ' --- SAFETY LAYER 1: VALIDASI FILE ---
         Dim lines As String()
         Try
             lines = File.ReadAllLines(opf.FileName)
@@ -395,48 +380,47 @@ Public Class DashboardForm
         Dim failCount As Integer = 0
         Dim errorLog As String = ""
 
-        Using con As New SQLiteConnection(AppConfig.CONN_STR)
+        ' Gunakan connStr lokal, bukan AppConfig untuk menghindari error referensi
+        Using con As New SQLiteConnection(connStr)
             con.Open()
 
-            ' --- SAFETY LAYER 2: TRANSACTION (ALL OR NOTHING) ---
             Using trans = con.BeginTransaction()
                 Try
-                    ' Mulai dari index 1 (melewati Header baris ke-0)
+                    ' Mulai dari index 1 (melewati Header)
                     For i As Integer = 1 To lines.Length - 1
                         Dim line As String = lines(i).Trim()
                         If String.IsNullOrWhiteSpace(line) Then Continue For
 
-                        ' Split CSV
                         Dim p As String() = line.Split(","c)
 
-                        ' --- SAFETY LAYER 3: VALIDASI KOLOM ---
                         If p.Length < 8 Then
                             failCount += 1
-                            errorLog = errorLog & "Baris " & (i + 1) & ": Kolom kurang (Wajib 8 kolom)." & vbNewLine
+                            ' FIX BC40000: Ganti vbNewLine dengan Environment.NewLine
+                            errorLog = errorLog & "Baris " & (i + 1) & ": Kolom kurang (Wajib 8 kolom)." & Environment.NewLine
                             Continue For
                         End If
 
-                        ' --- PARSING DATA ---
+                        ' Parsing
                         Dim nama As String = p(0).Trim()
                         Dim merk As String = p(1).Trim()
                         Dim serial As String = p(2).Trim()
                         Dim tgl As String = p(3).Trim()
-
-                        ' Bersihkan format harga
                         Dim hargaStr As String = System.Text.RegularExpressions.Regex.Replace(p(4), "[^\d]", "")
                         Dim harga As Long = 0
                         Long.TryParse(hargaStr, harga)
-
                         Dim kondisi As String = p(5).Trim()
-                        Dim lokasi As String = p(6).Trim()
-                        Dim kategori As String = p(7).Trim()
+                        Dim lokasiNama As String = p(6).Trim()
+                        Dim kategoriNama As String = p(7).Trim()
 
-                        ' --- SAFETY LAYER 4: DATA INTEGRITY ---
-                        EnsureReferenceExists(con, "locations", "nama_lokasi", lokasi)
-                        EnsureReferenceExists(con, "categories", "nama_kategori", kategori)
+                        ' --- LOGIKA BARU: Cari/Buat ID untuk Lokasi & Kategori ---
+                        EnsureReferenceExists(con, "locations", "nama_lokasi", lokasiNama)
+                        EnsureReferenceExists(con, "categories", "nama_kategori", kategoriNama)
 
-                        ' --- INSERT KE ASSETS ---
-                        Dim sql As String = "INSERT INTO assets (nama, merk, serial, tgl_beli, harga, kondisi, lokasi, kategori) " &
+                        Dim locId As Integer = GetId(con, "locations", "nama_lokasi", lokasiNama)
+                        Dim catId As Integer = GetId(con, "categories", "nama_kategori", kategoriNama)
+
+                        ' --- QUERY FIX: Masukkan ID (Integer), bukan Nama (String) ---
+                        Dim sql As String = "INSERT INTO assets (nama, merk, serial, tgl_beli, harga, kondisi, location_id, category_id) " &
                                             "VALUES (@n, @m, @s, @t, @h, @k, @l, @c)"
 
                         Using cmd As New SQLiteCommand(sql, con)
@@ -446,8 +430,8 @@ Public Class DashboardForm
                             cmd.Parameters.AddWithValue("@t", tgl)
                             cmd.Parameters.AddWithValue("@h", harga)
                             cmd.Parameters.AddWithValue("@k", kondisi)
-                            cmd.Parameters.AddWithValue("@l", lokasi)
-                            cmd.Parameters.AddWithValue("@c", kategori)
+                            cmd.Parameters.AddWithValue("@l", locId) ' Masukkan ID
+                            cmd.Parameters.AddWithValue("@c", catId) ' Masukkan ID
                             cmd.ExecuteNonQuery()
                         End Using
 
@@ -457,11 +441,11 @@ Public Class DashboardForm
                     trans.Commit()
                     LoadData()
 
-                    ' --- BAGIAN YANG TADI ERROR SUDAH DIPERBAIKI (GANTI KE MANUAL &) ---
-                    Dim msg As String = "Import Selesai!" & vbNewLine & "Sukses: " & successCount & vbNewLine & "Gagal: " & failCount
+                    ' FIX BC40000: Ganti vbNewLine dengan Environment.NewLine
+                    Dim msg As String = "Import Selesai!" & Environment.NewLine & "Sukses: " & successCount & Environment.NewLine & "Gagal: " & failCount
 
                     If failCount > 0 Then
-                        msg = msg & vbNewLine & vbNewLine & "Detail Error:" & vbNewLine & errorLog
+                        msg = msg & Environment.NewLine & Environment.NewLine & "Detail Error:" & Environment.NewLine & errorLog
                     End If
 
                     MessageBox.Show(msg, "Import Result", MessageBoxButtons.OK, If(failCount > 0, MessageBoxIcon.Warning, MessageBoxIcon.Information))
@@ -474,11 +458,9 @@ Public Class DashboardForm
         End Using
     End Sub
 
-    ' --- HELPER FUNCTION JUGA DIPERBAIKI ---
+    ' --- HELPER FUNCTION ---
     Private Sub EnsureReferenceExists(con As SQLiteConnection, tableName As String, colName As String, value As String)
         If String.IsNullOrWhiteSpace(value) Then Exit Sub
-
-        ' Manual string concat biar aman
         Dim sqlCheck As String = "SELECT COUNT(*) FROM " & tableName & " WHERE " & colName & " = @val"
         Dim checkCmd As New SQLiteCommand(sqlCheck, con)
         checkCmd.Parameters.AddWithValue("@val", value)
@@ -491,10 +473,20 @@ Public Class DashboardForm
             insertCmd.ExecuteNonQuery()
         End If
     End Sub
+
     Private Function GetId(con As SQLiteConnection, tbl As String, col As String, val As String) As Integer
-        Dim res = New SQLiteCommand($"SELECT id FROM {tbl} WHERE {col} = '{val}'", con).ExecuteScalar()
-        Return If(res IsNot Nothing, Convert.ToInt32(res), Convert.ToInt32(New SQLiteCommand($"INSERT INTO {tbl} ({col}) VALUES ('{val}'); SELECT last_insert_rowid()", con).ExecuteScalar()))
+        ' Ambil ID berdasarkan nama string
+        Dim cmd As New SQLiteCommand($"SELECT id FROM {tbl} WHERE {col} = @val", con)
+        cmd.Parameters.AddWithValue("@val", val)
+        Dim res = cmd.ExecuteScalar()
+
+        If res IsNot Nothing AndAlso Not IsDBNull(res) Then
+            Return Convert.ToInt32(res)
+        Else
+            Return 0 ' Should not happen if EnsureReferenceExists called first
+        End If
     End Function
+
     Private Sub CreateDatabaseIfNotExists()
         If Not File.Exists(dbName) Then
             SQLiteConnection.CreateFile(dbName)
@@ -502,6 +494,7 @@ Public Class DashboardForm
                 con.Open() : Dim cmd As New SQLiteCommand(con)
                 cmd.CommandText = "CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY AUTOINCREMENT, nama_kategori TEXT)" : cmd.ExecuteNonQuery()
                 cmd.CommandText = "CREATE TABLE IF NOT EXISTS locations (id INTEGER PRIMARY KEY AUTOINCREMENT, nama_lokasi TEXT)" : cmd.ExecuteNonQuery()
+                ' Perhatikan nama kolom FK disesuaikan: category_id, location_id
                 cmd.CommandText = "CREATE TABLE IF NOT EXISTS assets (id INTEGER PRIMARY KEY AUTOINCREMENT, nama TEXT, merk TEXT, serial TEXT, category_id INTEGER, location_id INTEGER, kondisi TEXT, harga REAL, tgl_beli TEXT)" : cmd.ExecuteNonQuery()
             End Using
         End If

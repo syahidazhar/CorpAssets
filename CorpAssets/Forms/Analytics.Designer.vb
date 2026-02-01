@@ -101,13 +101,3 @@ Partial Class AnalyticsForm
         Me.ResumeLayout(False)
     End Sub
 End Class
-
-' CLASS KHUSUS UNTUK MENGHILANGKAN FLICKER/DELAY
-Public Class BufferedPanel
-    Inherits Panel
-    Public Sub New()
-        Me.DoubleBuffered = True
-        Me.ResizeRedraw = True
-        Me.BackColor = Color.White
-    End Sub
-End Class

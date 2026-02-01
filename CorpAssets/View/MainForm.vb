@@ -11,6 +11,7 @@ Public Class MainForm
 
     Private Sub MainForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         AppConfig.InitDatabase()
+        'TopMost = True 'Always set on top
         TampilLogin()
     End Sub
 
